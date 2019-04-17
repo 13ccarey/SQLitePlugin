@@ -14,7 +14,7 @@ public class Plugin implements IPersistenceProvider
     public Plugin()
     {
         gameDAO = new SQLiteGameDAO(this);
-        userDAO = new SQLiteUserDAO();
+        userDAO = new SQLiteUserDAO(this);
         createTables();
     }
 
@@ -90,7 +90,7 @@ public class Plugin implements IPersistenceProvider
 
                 //stmt.executeUpdate("drop table if exists users");
                 stmt.executeUpdate("create table if not exists users (" +
-                        "username varchar(255) not null unique);");
+                        "user varchar(255) not null unique);");
 
                 //stmt.executeUpdate("drop table if exists authTokens");
                 stmt.executeUpdate("create table if not exists authTokens (" +

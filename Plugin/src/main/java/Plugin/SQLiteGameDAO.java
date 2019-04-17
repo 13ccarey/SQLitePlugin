@@ -23,14 +23,35 @@ public class SQLiteGameDAO implements IGameDAO
             PreparedStatement stmt = null;
             try
             {
-                String sql = "UPDATE games" +
-                        "SET commands = ?" +
-                        "WHERE" +
+                String sql = "SELECT commands FROM games WHERE gameNum = ?;";
+                plugin.beginTransaction();
+                stmt = plugin.getConn().prepareStatement(sql);
+                stmt.setInt(1, gameNum);
+
+                ResultSet rs = stmt.executeQuery();
+
+                String stringArray = rs.getString("commands");
+
+                String addValue;
+                if(stringArray == null)
+                {
+                    addValue = new String(s);
+                }
+                else
+                {
+                    addValue = stringArray + "---" + new String(s);
+                }
+
+                plugin.endTransaction();
+
+                  sql = "UPDATE games " +
+                        "SET commands = ? " +
+                        "WHERE " +
                         "gameNum = ?";
                 plugin.beginTransaction();
                 stmt = plugin.getConn().prepareStatement(sql);
 
-                //stmt.setString(1, user.getUsername());
+                stmt.setString(1, addValue);
                 stmt.setString(2, Integer.toString(gameNum));
 
                 if (stmt.executeUpdate() != 1)
@@ -97,7 +118,7 @@ public class SQLiteGameDAO implements IGameDAO
             PreparedStatement stmt = null;
             try
             {
-                String sql = "UPDATE games SET commands=NULL";
+                String sql = "UPDATE games SET commands = NULL";
             }
             finally
             {
@@ -115,33 +136,35 @@ public class SQLiteGameDAO implements IGameDAO
     }
 
     @Override
-    public List<byte[]> getAllGames()
+    public List<gameWrapper> getAllGames()
     {
         try
         {
             PreparedStatement stmt = null;
             try
             {
-                String sql = "SELECT game FROM games;";
+                String sql = "SELECT game, gameLabel FROM games;";
                 plugin.beginTransaction();
                 stmt = plugin.getConn().prepareStatement(sql);
 
                 ResultSet rs = stmt.executeQuery();
-                int size = 0;
 
                 ArrayList<byte[]> gamelist = new ArrayList<>();
-                /*for(int i = 0; i < size; i++)
-                {
-                    String output =  (String) rs.getObject(i);
-                    gamelist.add(output.getBytes());
-                }*/
+                ArrayList<String> labelList = new ArrayList<>();
                 while(rs.next())
                 {
                     gamelist.add(rs.getString("game").getBytes());
+                    labelList.add(rs.getString("gameLabel"));
+                }
+
+                ArrayList<gameWrapper> wrapperList = new ArrayList<>();
+                for(int i = 0; i < gamelist.size(); i++)
+                {
+                    wrapperList.add(new gameWrapper(gamelist.get(i), labelList.get(i)));
                 }
 
 
-                return gamelist;
+                return wrapperList;
             }
             finally
             {
@@ -163,6 +186,42 @@ public class SQLiteGameDAO implements IGameDAO
     @Override
     public List<byte[]> getAllGameCommands(int gameNum)
     {
-        return null;
+        try
+        {
+            PreparedStatement stmt = null;
+            try
+            {
+                String sql = "SELECT commands FROM games WHERE gameNum = ?;";
+                plugin.beginTransaction();
+                stmt = plugin.getConn().prepareStatement(sql);
+                stmt.setInt(1, gameNum);
+
+                ResultSet rs = stmt.executeQuery();
+
+                ArrayList<byte[]> commandList = new ArrayList<>();
+                String stringArray = rs.getString("commands");
+
+                String[] commandListString = stringArray.split("---");
+                for(int i = 0; i < commandListString.length; i++)
+                {
+                    commandList.add(commandListString[i].getBytes());
+                }
+
+                return commandList;
+            }
+            finally
+            {
+                if (stmt != null)
+                {
+                    stmt.close();
+                }
+                plugin.endTransaction();
+            }
+        }
+        catch (SQLException e)
+        {
+            System.out.println("Bad things are happening in getcommands");
+            return null;
+        }
     }
 }
