@@ -13,7 +13,7 @@ public class Plugin implements IPersistenceProvider
 
     public Plugin()
     {
-        gameDAO = new SQLiteGameDAO();
+        gameDAO = new SQLiteGameDAO(this);
         userDAO = new SQLiteUserDAO();
         createTables();
     }
@@ -23,7 +23,7 @@ public class Plugin implements IPersistenceProvider
     {
         try
         {
-            final String CONNECTION_URL = "jdbc:sqlite:TicketToRide.sqlite";
+            final String CONNECTION_URL = "jdbc:sqlite:C:/sqlite/ticket.db";
 
             // Open a database connection
             conn = DriverManager.getConnection(CONNECTION_URL);
@@ -80,6 +80,7 @@ public class Plugin implements IPersistenceProvider
 
     private void createTables()
     {
+        beginTransaction();
         try
         {
             Statement stmt = null;
@@ -88,44 +89,19 @@ public class Plugin implements IPersistenceProvider
                 stmt = conn.createStatement();
 
                 //stmt.executeUpdate("drop table if exists users");
-                stmt.executeUpdate("create table if not exists users (username varchar(255) not null unique," +
-                        "password varchar(255) not null," +
-                        "email varchar(255) not null," +
-                        "firstName varchar(255) not null," +
-                        "lastName varchar(255) not null," +
-                        "gender ck_genre check (gender in ('f', 'm'))," +
-                        "personID varchar(255) not null unique);");
+                stmt.executeUpdate("create table if not exists users (" +
+                        "username varchar(255) not null unique);");
 
                 //stmt.executeUpdate("drop table if exists authTokens");
                 stmt.executeUpdate("create table if not exists authTokens (" +
-                        "tokenID varchar(255) not null unique," +
-                        "username varchar(255) not null unique" +
-                        ");");
+                        "tokenID varchar(255) not null unique);");
 
-                //stmt.executeUpdate("drop table if exists persons");
-                stmt.executeUpdate("create table if not exists persons (" +
-                        "descendant varchar(255) not null," +
-                        "personID varchar(255) not null unique," +
-                        "firstName varchar(255) not null," +
-                        "lastName varchar(255) not null," +
-                        "gender ck_genre check (gender in ('f', 'm'))," +
-                        "fatherID varchar(255)," +
-                        "motherID varchar(255)," +
-                        "spouseID varchar(255)" +
-                        ");");
+                stmt.executeUpdate("create table if not exists games (" +
+                        "gameNum integer not null unique, " +
+                        "gameLabel varchar(255) not null, " +
+                        "game varchar(255) not null, " +
+                        "commands varchar(255));");
 
-                //stmt.executeUpdate("drop table if exists events");
-                stmt.executeUpdate("create table if not exists events (" +
-                        "descendant varchar(255) not null," +
-                        "eventID varchar(255) not null unique," +
-                        "personID varchar(255) not null," +
-                        "latitude float(24) not null," +
-                        "longitude float(24) not null," +
-                        "country varchar(255) not null," +
-                        "city varchar(255) not null," +
-                        "eventType varchar(255) not null," +
-                        "year int not null" +
-                        ");");
             }
             finally
             {
@@ -134,6 +110,7 @@ public class Plugin implements IPersistenceProvider
                     stmt.close();
                     stmt = null;
                 }
+                endTransaction();
             }
         }
         catch (SQLException e)
